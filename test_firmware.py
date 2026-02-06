@@ -1,10 +1,10 @@
 import subprocess
 import os
+import sys
 
 def run_test():
-    print("🚀 Starting Automated Firmware Test...")
+    print("--- Starting Automated Firmware Test ---")
     
-    # This automatically finds the .bin file regardless of the folder name
     firmware_path = ""
     for root, dirs, files in os.walk(".pio/build"):
         if "firmware.bin" in files:
@@ -12,26 +12,30 @@ def run_test():
             break
 
     if not firmware_path:
-        print("❌ ERROR: Could not find firmware.bin. Did the build fail?")
+        print("ERROR: Could not find firmware.bin. Run 'pio run' first.")
         return False
 
-    print(f"📦 Found firmware at: {firmware_path}")
+    print(f"Found firmware at: {firmware_path}")
     
-    # Run Wokwi CLI
+    # Run Wokwi CLI with a 15-second timeout
     cmd = f"wokwi-cli --timeout 15000 --bin {firmware_path} diagram.json"
     
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-    
-    # This is the "Self-Healing" check
-    if "HEARTBEAT_HIGH" in result.stdout:
-        print("✅ TEST PASSED: Heartbeat detected!")
-        return True
-    else:
-        print("❌ TEST FAILED: Heartbeat not found.")
-        print("Full Simulator Log Below:")
-        print(result.stdout) # This will now show us EXACTLY what happened
+    try:
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        
+        print("--- SIMULATOR LOG START ---")
+        print(result.stdout)
+        print("--- SIMULATOR LOG END ---")
+
+        if "HEARTBEAT_HIGH" in result.stdout:
+            print("PASS: Heartbeat detected!")
+            return True
+        else:
+            print("FAIL: Heartbeat not found in logs.")
+            return False
+    except Exception as e:
+        print(f"CRITICAL ERROR: {e}")
         return False
 
 if __name__ == "__main__":
-    import sys
     sys.exit(0 if run_test() else 1)
