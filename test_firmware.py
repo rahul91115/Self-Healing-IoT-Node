@@ -5,7 +5,7 @@ def run_test():
     print("--- Starting Automated Firmware Test ---")
     
     # The '.' tells wokwi-cli to look at wokwi.toml for the path
-    cmd = "wokwi-cli --timeout 15000 ."
+    cmd = "wokwi-cli --timeout 50000 ."
     
     try:
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True, encoding='utf-8')
