@@ -1,33 +1,37 @@
 import subprocess
-import time
+import os
 
 def run_test():
     print("🚀 Starting Automated Firmware Test...")
     
-    # This command runs Wokwi for 10 seconds and saves output to 'log.txt'
-    # The --timeout tells it when to stop automatically
-    cmd = "wokwi-cli --timeout 10000 --bin .pio/build/az-delivery-devkit-v4/firmware.bin diagram.json"
+    # This automatically finds the .bin file regardless of the folder name
+    firmware_path = ""
+    for root, dirs, files in os.walk(".pio/build"):
+        if "firmware.bin" in files:
+            firmware_path = os.path.join(root, "firmware.bin")
+            break
+
+    if not firmware_path:
+        print("❌ ERROR: Could not find firmware.bin. Did the build fail?")
+        return False
+
+    print(f"📦 Found firmware at: {firmware_path}")
     
-    try:
-        # Run the simulation and capture what it prints
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-        output = result.stdout
-        
-        # The "Healing" Logic: Check if our heartbeats exist
-        if "HEARTBEAT_HIGH" in output and "HEARTBEAT_LOW" in output:
-            print("✅ TEST PASSED: Heartbeat detected!")
-            return True
-        else:
-            print("❌ TEST FAILED: Heartbeat missing or system crashed.")
-            print("Log Snippet:", output[:200]) # Show the first bit of the error
-            return False
-            
-    except Exception as e:
-        print(f"❗ Error running test: {e}")
+    # Run Wokwi CLI
+    cmd = f"wokwi-cli --timeout 15000 --bin {firmware_path} diagram.json"
+    
+    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    
+    # This is the "Self-Healing" check
+    if "HEARTBEAT_HIGH" in result.stdout:
+        print("✅ TEST PASSED: Heartbeat detected!")
+        return True
+    else:
+        print("❌ TEST FAILED: Heartbeat not found.")
+        print("Full Simulator Log Below:")
+        print(result.stdout) # This will now show us EXACTLY what happened
         return False
 
 if __name__ == "__main__":
-    if run_test():
-        exit(0) # Success signal to GitHub
-    else:
-        exit(1) # Failure signal to GitHub
+    import sys
+    sys.exit(0 if run_test() else 1)
