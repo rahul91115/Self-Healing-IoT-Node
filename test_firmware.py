@@ -20,7 +20,7 @@ def run_test():
     print(f"Targeting: {firmware_path}")
     
     # 2. Command - Added --serial-log to ensure output is captured
-    cmd = f'wokwi-cli --timeout 20000 --bin "{firmware_path}" .'
+    cmd = "wokwi-cli --timeout 15000 ."
     
     try:
         # We use shell=True and combine stdout/stderr for maximum visibility
